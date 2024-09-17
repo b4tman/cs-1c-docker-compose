@@ -31,8 +31,6 @@ services:
       - hazelcast
       - elasticsearch
       - db
-    links:
-      - db
   db:
     build: db
     restart: always

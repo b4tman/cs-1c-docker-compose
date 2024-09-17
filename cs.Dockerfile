@@ -46,6 +46,16 @@ RUN set -x &&\
     useradd -m cs_user &&\
     mkdir -p /var/cs/cs_instance &&\
     ring cs instance create --dir /var/cs/cs_instance --owner cs_user &&\
+    ring cs --instance cs_instance hazelcast set-params --group-name 1ce-cs --group-password cs-pass --addresses hazelcast &&\
+    ring cs --instance cs_instance elasticsearch set-params --addresses elasticsearch:9300 &&\
+    ring cs --instance cs_instance jdbc pools --name common set-params --url jdbc:postgresql://db:5432/cs_db?currentSchema=public &&\
+    ring cs --instance cs_instance jdbc pools --name common set-params --username postgres &&\
+    ring cs --instance cs_instance jdbc pools --name common set-params --password postgres &&\
+    ring cs --instance cs_instance jdbc pools --name privileged set-params --url jdbc:postgresql://db:5432/cs_db?currentSchema=public &&\
+    ring cs --instance cs_instance jdbc pools --name privileged set-params --username postgres &&\
+    ring cs --instance cs_instance jdbc pools --name privileged set-params --password postgres &&\
+    ring cs --instance cs_instance websocket set-params --hostname cs &&\
+    ring cs --instance cs_instance websocket set-params --port 8087 &&\
     chown -R cs_user:cs_user /var/cs/cs_instance
     
 VOLUME /var/cs/cs_instance
@@ -54,22 +64,4 @@ USER cs_user
 EXPOSE 8087
 EXPOSE 8086
 
-# Настроить cs на работу с компонентами из других контейнеров
-    # "внешний" hazelcast
-RUN set -x && \
-    ring cs --instance cs_instance hazelcast set-params --group-name 1ce-cs --group-password cs-pass --addresses hazelcast &&\
-    # "внешний" elasticsearch
-    ring cs --instance cs_instance elasticsearch set-params --addresses elasticsearch:9300 &&\
-    # "внешний" db
-    ring cs --instance cs_instance jdbc pools --name common set-params --url jdbc:postgresql://db:5432/cs_db?currentSchema=public &&\
-    ring cs --instance cs_instance jdbc pools --name common set-params --username postgres &&\
-    ring cs --instance cs_instance jdbc pools --name common set-params --password postgres &&\
-    ring cs --instance cs_instance jdbc pools --name privileged set-params --url jdbc:postgresql://db:5432/cs_db?currentSchema=public &&\
-    ring cs --instance cs_instance jdbc pools --name privileged set-params --username postgres &&\
-    ring cs --instance cs_instance jdbc pools --name privileged set-params --password postgres &&\
-    # WebSocket
-    ring cs --instance cs_instance websocket set-params --hostname cs &&\
-    # порт не 8087, т.к. это административный интерфейс
-    ring cs --instance cs_instance websocket set-params --port 8086
-
-ENTRYPOINT ["/usr/local/bin/cs_launcher", "start", "--instance", "/var/cs/cs_instance", "--javahome", "/usr/lib/jvm/current"]
+CMD ["/usr/local/bin/cs_launcher", "start", "--instance", "/var/cs/cs_instance", "--javahome", "/usr/lib/jvm/current"]
