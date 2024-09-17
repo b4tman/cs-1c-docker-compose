@@ -2,37 +2,41 @@ version: "3.8"
 
 services:
   hazelcast:
-    build: ./hazelcast
+    build: 
+      context: distr
+      dockerfile: ../hazelcast.Dockerfile
     stdin_open: true
     tty: true
     ports:
-      - "5701:5701"
-      - "8088:8080"
+      - "0.0.0.0:5701:5701"
+      - "0.0.0.0:8088:8080"
   elasticsearch:
-    build: ./elasticsearch
+    build:  
+      context: distr
+      dockerfile: ../elasticsearch.Dockerfile
     stdin_open: true
     tty: true
     ports:
-      - "9300:9300"
+      - "0.0.0.0:9300:9300"
   cs:
-    build: ./cs
+    build:
+      context: distr
+      dockerfile: ../cs.Dockerfile
     stdin_open: true
     tty: true
     ports:
-      - "8087:8087"
-      - "8086:8086"
+      - "0.0.0.0:8087:8087"
+      - "0.0.0.0:8086:8086"
     depends_on:
       - hazelcast
       - elasticsearch
       - db
+    links:
+      - db
   db:
-    image: postgres:12-alpine
+    build: db
     restart: always
     environment:
       - POSTGRES_DB=cs_db
       - POSTGRES_USER=postgres
       - POSTGRES_PASSWORD=postgres
-    ports:
-      - "5432:5432"
-    volumes:
-      - ./db/init-cs-db.sql:/docker-entrypoint-initdb.d/init-cs-db.sql
