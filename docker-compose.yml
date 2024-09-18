@@ -22,6 +22,10 @@ services:
     build:
       context: distr
       dockerfile: ../cs.Dockerfile
+      args:
+        HAZELCAST_ADDR: hazelcast
+        ELASTICSEARCH_ADDR: elasticsearch:9300
+        POSTGRES_ADDR: db:5432
     stdin_open: true
     tty: true
     ports:

@@ -15,6 +15,14 @@ RUN set -x && \
 
 FROM bellsoft/liberica-openjdk-debian:11
 
+ARG HAZELCAST_ADDR=hazelcast
+ARG HAZELCAST_GROUP_PASS=cs-pass
+ARG ELASTICSEARCH_ADDR=elasticsearch:9300
+ARG POSTGRES_ADDR=db:5432
+ARG POSTGRES_USER=postgres
+ARG POSTGRES_PASSWORD=postgres
+ARG WEBSOCKET_PORT=8085
+
 RUN apt-get update && apt-get -y install sudo curl gawk && rm -rf /var/lib/apt/lists/*
 
 COPY --from=installer /opt/1C/ /opt/1C/ 
@@ -41,15 +49,15 @@ RUN set -x && \
     mkdir -p /var/cs/cs_instance &&\
     ring cs instance create --dir /var/cs/cs_instance --owner cs_user &&\
     \
-    ring cs --instance cs_instance hazelcast set-params --group-name 1ce-cs --group-password cs-pass --addresses hazelcast &&\
-    ring cs --instance cs_instance elasticsearch set-params --addresses elasticsearch:9300 &&\
-    ring cs --instance cs_instance jdbc pools --name common set-params --url jdbc:postgresql://db:5432/cs_db?currentSchema=public &&\
-    ring cs --instance cs_instance jdbc pools --name common set-params --username postgres &&\
-    ring cs --instance cs_instance jdbc pools --name common set-params --password postgres &&\
-    ring cs --instance cs_instance jdbc pools --name privileged set-params --url jdbc:postgresql://db:5432/cs_db?currentSchema=public &&\
-    ring cs --instance cs_instance jdbc pools --name privileged set-params --username postgres &&\
-    ring cs --instance cs_instance jdbc pools --name privileged set-params --password postgres &&\
-    ring cs --instance cs_instance websocket set-params --port 8085 &&\
+    ring cs --instance cs_instance hazelcast set-params --group-name 1ce-cs --group-password $HAZELCAST_GROUP_PASS --addresses $HAZELCAST_ADDR &&\
+    ring cs --instance cs_instance elasticsearch set-params --addresses $ELASTICSEARCH_ADDR &&\
+    ring cs --instance cs_instance jdbc pools --name common set-params --url jdbc:postgresql://$POSTGRES_ADDR/cs_db?currentSchema=public &&\
+    ring cs --instance cs_instance jdbc pools --name common set-params --username $POSTGRES_USER &&\
+    ring cs --instance cs_instance jdbc pools --name common set-params --password $POSTGRES_PASSWORD &&\
+    ring cs --instance cs_instance jdbc pools --name privileged set-params --url jdbc:postgresql://$POSTGRES_ADDR/cs_db?currentSchema=public &&\
+    ring cs --instance cs_instance jdbc pools --name privileged set-params --username $POSTGRES_USER &&\
+    ring cs --instance cs_instance jdbc pools --name privileged set-params --password $POSTGRES_PASSWORD &&\
+    ring cs --instance cs_instance websocket set-params --port $WEBSOCKET_PORT &&\
     ring cs --instance cs_instance websocket set-params --wss false &&\
     \
     mkdir -p /var/cs/cs_instance/data &&\
