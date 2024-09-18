@@ -37,20 +37,23 @@ RUN set -x && \
     chmod +x /usr/local/bin/ring && \
     chmod +x /usr/local/bin/elasticsearch_launcher && \
     \
-    ln -s $JAVA_HOME /usr/lib/jvm/current
-    
-
-WORKDIR /app
-
-RUN set -x &&\
+    ln -s $JAVA_HOME /usr/lib/jvm/current &&\
+    \
     useradd -m cs_user &&\
     mkdir -p /var/cs/elastic_instance &&\
     ring elasticsearch instance create --dir /var/cs/elastic_instance --owner cs_user &&\
+    \
+    mkdir -p /var/cs/elastic_instance/data &&\
+    mkdir -p /var/cs/elastic_instance/logs &&\
     chown -R cs_user:cs_user /var/cs/elastic_instance
 
-VOLUME /var/cs/elastic_instance
+WORKDIR /var/cs/elastic_instance
+
+VOLUME /var/cs/elastic_instance/logs
+VOLUME /var/cs/elastic_instance/data
+
 USER cs_user
 
 EXPOSE 9300
 
-ENTRYPOINT ["/usr/local/bin/elasticsearch_launcher", "start", "--instance", "/var/cs/elastic_instance", "--javahome", "/usr/lib/jvm/current"]
+CMD sh -exc "rm -vf daemon.pid && exec /usr/local/bin/elasticsearch_launcher start --instance /var/cs/elastic_instance --javahome /usr/lib/jvm/current"

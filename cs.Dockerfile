@@ -17,8 +17,6 @@ FROM bellsoft/liberica-openjdk-debian:11
 
 RUN apt-get update && apt-get -y install sudo curl gawk && rm -rf /var/lib/apt/lists/*
 
-WORKDIR /tmp
-
 COPY --from=installer /opt/1C/ /opt/1C/ 
 COPY --from=installer /etc/1C/ /etc/1C/
 
@@ -37,15 +35,12 @@ RUN set -x && \
     chmod +x /usr/local/bin/ring && \
     chmod +x /usr/local/bin/cs_launcher && \
     \
-    ln -s $JAVA_HOME /usr/lib/jvm/current
-    
-
-WORKDIR /app
-
-RUN set -x &&\
+    ln -s $JAVA_HOME /usr/lib/jvm/current &&\
+    \
     useradd -m cs_user &&\
     mkdir -p /var/cs/cs_instance &&\
     ring cs instance create --dir /var/cs/cs_instance --owner cs_user &&\
+    \
     ring cs --instance cs_instance hazelcast set-params --group-name 1ce-cs --group-password cs-pass --addresses hazelcast &&\
     ring cs --instance cs_instance elasticsearch set-params --addresses elasticsearch:9300 &&\
     ring cs --instance cs_instance jdbc pools --name common set-params --url jdbc:postgresql://db:5432/cs_db?currentSchema=public &&\
@@ -54,14 +49,21 @@ RUN set -x &&\
     ring cs --instance cs_instance jdbc pools --name privileged set-params --url jdbc:postgresql://db:5432/cs_db?currentSchema=public &&\
     ring cs --instance cs_instance jdbc pools --name privileged set-params --username postgres &&\
     ring cs --instance cs_instance jdbc pools --name privileged set-params --password postgres &&\
-    ring cs --instance cs_instance websocket set-params --hostname cs &&\
-    ring cs --instance cs_instance websocket set-params --port 8087 &&\
+    ring cs --instance cs_instance websocket set-params --port 8085 &&\
+    ring cs --instance cs_instance websocket set-params --wss false &&\
+    \
+    mkdir -p /var/cs/cs_instance/data &&\
+    mkdir -p /var/cs/cs_instance/logs &&\
     chown -R cs_user:cs_user /var/cs/cs_instance
     
-VOLUME /var/cs/cs_instance
+WORKDIR /var/cs/cs_instance
+
+VOLUME /var/cs/cs_instance/logs
+VOLUME /var/cs/cs_instance/data
+
 USER cs_user
 
 EXPOSE 8087
 EXPOSE 8086
 
-CMD ["/usr/local/bin/cs_launcher", "start", "--instance", "/var/cs/cs_instance", "--javahome", "/usr/lib/jvm/current"]
+CMD sh -exc "rm -vf daemon.pid && exec /usr/local/bin/cs_launcher start --instance /var/cs/cs_instance --javahome /usr/lib/jvm/current"

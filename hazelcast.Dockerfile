@@ -16,9 +16,6 @@ FROM bellsoft/liberica-openjdk-debian:11
 
 RUN apt-get update && apt-get -y install sudo curl gawk && rm -rf /var/lib/apt/lists/*
 
-RUN mkdir /tmp/install
-WORKDIR /tmp
-
 COPY --from=installer /opt/1C/ /opt/1C/ 
 COPY --from=installer /etc/1C/ /etc/1C/
 
@@ -37,22 +34,25 @@ RUN set -x && \
     chmod +x /usr/local/bin/ring && \
     chmod +x /usr/local/bin/hc_launcher && \
     \
-    ln -s $JAVA_HOME /usr/lib/jvm/current
-    
-
-WORKDIR /app
-
-RUN set -x &&\
+    ln -s $JAVA_HOME /usr/lib/jvm/current &&\
+    \
     useradd -m cs_user &&\
     mkdir -p /var/cs/hc_instance &&\
     ring hazelcast instance create --dir /var/cs/hc_instance --owner cs_user &&\
+    \
+    mkdir -p /var/cs/hc_instance/data &&\
+    mkdir -p /var/cs/hc_instance/logs &&\
     chown -R cs_user:cs_user /var/cs/hc_instance
     
-VOLUME /var/cs/hc_instance
+WORKDIR /var/cs/hc_instance
+
+VOLUME /var/cs/hc_instance/logs
+VOLUME /var/cs/hc_instance/data
+
 USER cs_user
 
 # <management-center enabled="true">http://localhost:8080/mancenter</management-center>
 EXPOSE 8080
 EXPOSE 5701
 
-ENTRYPOINT ["/usr/local/bin/hc_launcher", "start", "--instance", "/var/cs/hc_instance", "--javahome", "/usr/lib/jvm/current"]
+CMD sh -exc "rm -vf daemon.pid && exec /usr/local/bin/hc_launcher start --instance /var/cs/hc_instance --javahome /usr/lib/jvm/current"
